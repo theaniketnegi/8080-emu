@@ -34,6 +34,17 @@ void unimplementedInstruction()
 	exit(1);
 }
 
+int parity(int num)
+{
+	int p = 1;
+	while (num)
+	{
+		p = !p;
+		num = num & (num - 1);
+	}
+	return p;
+}
+
 int emulate8080(emu8080 *emu)
 {
 	unsigned char *opcode = &emu->memory[emu->pc];
@@ -44,64 +55,235 @@ int emulate8080(emu8080 *emu)
 	case 0x01:
 	case 0x02:
 	case 0x03:
+		emu->c++;
+		if (emu->c == 0)
+		{
+			emu->b++;
+		}
+		break;
 	case 0x04:
+		emu->b++;
+		emu->flags.z = (emu->b == 0);
+		emu->flags.s = ((emu->b & 0x80) != 0);
+		emu->flags.p = parity(emu->b);
+		break;
 	case 0x05:
+		emu->b--;
+		emu->flags.z = (emu->b == 0);
+		emu->flags.s = ((emu->b & 0x80) != 0);
+		emu->flags.p = parity(emu->b);
+		break;
 	case 0x06:
 	case 0x07:
 	case 0x08:
 	case 0x09:
+	{
+		uint16_t valH = (emu->h << 8) | (emu->l);
+		uint16_t valRP = (emu->b << 8) | (emu->c);
+		uint32_t add = (uint32_t)valH + (uint32_t)valRP;
+		emu->flags.cy = (add > 0xFFFF);
+
+		emu->h = (add & 0xff00) >> 8;
+		emu->l = (add & 0x00ff);
+		break;
+	}
 	case 0x0a:
 	case 0x0b:
+		emu->c--;
+		if (emu->c == 0xff)
+		{
+			emu->b--;
+		}
+		break;
 	case 0x0c:
+		emu->c++;
+		emu->flags.z = (emu->c == 0);
+		emu->flags.s = ((emu->c & 0x80) != 0);
+		emu->flags.p = parity(emu->b);
+		break;
 	case 0x0d:
+		emu->c--;
+		emu->flags.z = (emu->c == 0);
+		emu->flags.s = ((emu->c & 0x80) != 0);
+		emu->flags.p = parity(emu->c);
+		break;
+
 	case 0x0e:
 	case 0x0f:
 	case 0x10:
 	case 0x11:
 	case 0x12:
 	case 0x13:
+		emu->e++;
+		if (emu->e == 0)
+		{
+			emu->d++;
+		}
+		break;
 	case 0x14:
+		emu->d++;
+		emu->flags.z = (emu->d == 0);
+		emu->flags.s = ((emu->d & 0x80) != 0);
+		emu->flags.p = parity(emu->d);
+		break;
 	case 0x15:
+		emu->d--;
+		emu->flags.z = (emu->d == 0);
+		emu->flags.s = ((emu->d & 0x80) != 0);
+		emu->flags.p = parity(emu->d);
+		break;
+
 	case 0x16:
 	case 0x17:
 	case 0x18:
 	case 0x19:
+	{
+		uint16_t valH = (emu->h << 8) | (emu->l);
+		uint16_t valRP = (emu->d << 8) | (emu->e);
+		uint32_t add = (uint32_t)valH + (uint32_t)valRP;
+		emu->flags.cy = (add > 0xFFFF);
+
+		emu->h = (add & 0xff00) >> 8;
+		emu->l = (add & 0x00ff);
+		break;
+	}
 	case 0x1a:
 	case 0x1b:
+		emu->e--;
+		if (emu->e == 0xff)
+		{
+			emu->d--;
+		}
+		break;
 	case 0x1c:
+		emu->e++;
+		emu->flags.z = (emu->e == 0);
+		emu->flags.s = ((emu->e & 0x80) != 0);
+		emu->flags.p = parity(emu->e);
+		break;
 	case 0x1d:
+		emu->e--;
+		emu->flags.z = (emu->e == 0);
+		emu->flags.s = ((emu->e & 0x80) != 0);
+		emu->flags.p = parity(emu->e);
+		break;
 	case 0x1e:
 	case 0x1f:
 	case 0x20:
 	case 0x21:
 	case 0x22:
 	case 0x23:
+		emu->l++;
+		if (emu->l == 0)
+		{
+			emu->h++;
+		}
+		break;
 	case 0x24:
+		emu->h++;
+		emu->flags.z = (emu->h == 0);
+		emu->flags.s = ((emu->h & 0x80) != 0);
+		emu->flags.p = parity(emu->h);
+		break;
 	case 0x25:
+		emu->h--;
+		emu->flags.z = (emu->h == 0);
+		emu->flags.s = ((emu->h & 0x80) != 0);
+		emu->flags.p = parity(emu->h);
+		break;
 	case 0x26:
 	case 0x27:
+		// TODO
+		break;
 	case 0x28:
 	case 0x29:
+	{
+		uint16_t valH = (emu->h << 8) | (emu->l);
+		uint16_t valRP = (emu->h << 8) | (emu->l);
+		uint32_t add = (uint32_t)valH + (uint32_t)valRP;
+		emu->flags.cy = (add > 0xFFFF);
+
+		emu->h = (add & 0xff00) >> 8;
+		emu->l = (add & 0x00ff);
+		break;
+	}
 	case 0x2a:
 	case 0x2b:
+		emu->l--;
+		if (emu->l == 0xff)
+		{
+			emu->h--;
+		}
+		break;
 	case 0x2c:
+		emu->l++;
+		emu->flags.z = (emu->l == 0);
+		emu->flags.s = ((emu->l & 0x80) != 0);
+		emu->flags.p = parity(emu->l);
+		break;
 	case 0x2d:
+		emu->l--;
+		emu->flags.z = (emu->l == 0);
+		emu->flags.s = ((emu->l & 0x80) != 0);
+		emu->flags.p = parity(emu->l);
+		break;
+
 	case 0x2e:
 	case 0x2f:
 	case 0x30:
 	case 0x31:
 	case 0x32:
 	case 0x33:
+		emu->sp++;
+		break;
 	case 0x34:
+	{
+		uint8_t add = ++emu->memory[(emu->h << 8) | (emu->l)];
+		emu->flags.z = (add == 0);
+		emu->flags.s = ((add & 0x80) != 0);
+		emu->flags.p = parity(add);
+		break;
+	}
 	case 0x35:
+	{
+		uint8_t add = --emu->memory[(emu->h << 8) | (emu->l)];
+		emu->flags.z = (add == 0);
+		emu->flags.s = ((add & 0x80) != 0);
+		emu->flags.p = parity(add);
+		break;
+	}
 	case 0x36:
 	case 0x37:
+		emu->flags.cy = 1;
+		break;
 	case 0x38:
 	case 0x39:
+	{
+		uint16_t valH = (emu->h << 8) | (emu->l);
+		uint16_t valRP = emu->sp;
+		uint32_t add = (uint32_t)valH + (uint32_t)valRP;
+		emu->flags.cy = (add > 0xFFFF);
+
+		emu->h = (add & 0xff00) >> 8;
+		emu->l = (add & 0x00ff);
+		break;
+	}
 	case 0x3a:
 	case 0x3b:
+		emu->sp--;
+		break;
 	case 0x3c:
+		emu->a++;
+		emu->flags.z = (emu->a == 0);
+		emu->flags.s = ((emu->a & 0x80) != 0);
+		emu->flags.p = parity(emu->a);
+		break;
 	case 0x3d:
+		emu->a--;
+		emu->flags.z = (emu->a == 0);
+		emu->flags.s = ((emu->a & 0x80) != 0);
+		emu->flags.p = parity(emu->a);
+		break;
 	case 0x3e:
 	case 0x3f:
 	case 0x40:
@@ -169,37 +351,329 @@ int emulate8080(emu8080 *emu)
 	case 0x7e:
 	case 0x7f:
 	case 0x80:
+	{
+		uint16_t add = (uint16_t)emu->a + (uint16_t)emu->b;
+		emu->flags.z = ((add & 0xff) == 0);
+		emu->flags.s = ((add & 0x80) == 0 ? 0 : 1);
+		emu->flags.cy = ((add > 0xff) ? 1 : 0);
+		emu->flags.p = parity(add & 0xff);
+		emu->a = (uint8_t)(add & 0xff);
+		break;
+	}
 	case 0x81:
+	{
+		uint16_t add = (uint16_t)emu->a + (uint16_t)emu->c;
+		emu->flags.z = ((add & 0xff) == 0);
+		emu->flags.s = ((add & 0x80) == 0 ? 0 : 1);
+		emu->flags.cy = ((add > 0xff) ? 1 : 0);
+		emu->flags.p = parity(add & 0xff);
+		emu->a = (uint8_t)(add & 0xff);
+		break;
+	}
 	case 0x82:
+	{
+		uint16_t add = (uint16_t)emu->a + (uint16_t)emu->d;
+		emu->flags.z = ((add & 0xff) == 0);
+		emu->flags.s = ((add & 0x80) == 0 ? 0 : 1);
+		emu->flags.cy = ((add > 0xff) ? 1 : 0);
+		emu->flags.p = parity(add & 0xff);
+		emu->a = (uint8_t)(add & 0xff);
+		break;
+	}
 	case 0x83:
+	{
+		uint16_t add = (uint16_t)emu->a + (uint16_t)emu->e;
+		emu->flags.z = ((add & 0xff) == 0);
+		emu->flags.s = ((add & 0x80) == 0 ? 0 : 1);
+		emu->flags.cy = ((add > 0xff) ? 1 : 0);
+		emu->flags.p = parity(add & 0xff);
+		emu->a = (uint8_t)(add & 0xff);
+		break;
+	}
 	case 0x84:
+	{
+		uint16_t add = (uint16_t)emu->a + (uint16_t)emu->h;
+		emu->flags.z = ((add & 0xff) == 0);
+		emu->flags.s = ((add & 0x80) == 0 ? 0 : 1);
+		emu->flags.cy = ((add > 0xff) ? 1 : 0);
+		emu->flags.p = parity(add & 0xff);
+		emu->a = (uint8_t)(add & 0xff);
+		break;
+	}
 	case 0x85:
+	{
+		uint16_t add = (uint16_t)emu->a + (uint16_t)emu->l;
+		emu->flags.z = ((add & 0xff) == 0);
+		emu->flags.s = ((add & 0x80) == 0 ? 0 : 1);
+		emu->flags.cy = ((add > 0xff) ? 1 : 0);
+		emu->flags.p = parity(add & 0xff);
+		emu->a = (uint8_t)(add & 0xff);
+		break;
+	}
 	case 0x86:
+	{
+		uint8_t valM = emu->memory[(emu->h) << 8 | (emu->l)];
+		uint16_t add = (uint16_t)emu->a + (uint16_t)valM;
+		emu->flags.z = ((add & 0xff) == 0);
+		emu->flags.s = ((add & 0x80) == 0 ? 0 : 1);
+		emu->flags.cy = ((add > 0xff) ? 1 : 0);
+		emu->flags.p = parity(add & 0xff);
+		emu->a = (uint8_t)(add & 0xff);
+		break;
+	}
 	case 0x87:
+	{
+		uint16_t add = (uint16_t)emu->a + (uint16_t)emu->a;
+		emu->flags.z = ((add & 0xff) == 0);
+		emu->flags.s = ((add & 0x80) == 0 ? 0 : 1);
+		emu->flags.cy = ((add > 0xff) ? 1 : 0);
+		emu->flags.p = parity(add & 0xff);
+		emu->a = (uint8_t)(add & 0xff);
+		break;
+	}
 	case 0x88:
+	{
+		uint16_t add = (uint16_t)emu->a + (uint16_t)emu->b + (uint16_t)emu->flags.cy;
+		emu->flags.z = ((add & 0xff) == 0);
+		emu->flags.s = ((add & 0x80) == 0 ? 0 : 1);
+		emu->flags.cy = ((add > 0xff) ? 1 : 0);
+		emu->flags.p = parity(add & 0xff);
+		emu->a = (uint8_t)(add & 0xff);
+		break;
+	}
 	case 0x89:
+	{
+		uint16_t add = (uint16_t)emu->a + (uint16_t)emu->c + (uint16_t)emu->flags.cy;
+		emu->flags.z = ((add & 0xff) == 0);
+		emu->flags.s = ((add & 0x80) == 0 ? 0 : 1);
+		emu->flags.cy = ((add > 0xff) ? 1 : 0);
+		emu->flags.p = parity(add & 0xff);
+		emu->a = (uint8_t)(add & 0xff);
+		break;
+	}
 	case 0x8a:
+	{
+		uint16_t add = (uint16_t)emu->a + (uint16_t)emu->d + (uint16_t)emu->flags.cy;
+		emu->flags.z = ((add & 0xff) == 0);
+		emu->flags.s = ((add & 0x80) == 0 ? 0 : 1);
+		emu->flags.cy = ((add > 0xff) ? 1 : 0);
+		emu->flags.p = parity(add & 0xff);
+		emu->a = (uint8_t)(add & 0xff);
+		break;
+	}
 	case 0x8b:
+	{
+		uint16_t add = (uint16_t)emu->a + (uint16_t)emu->e + (uint16_t)emu->flags.cy;
+		emu->flags.z = ((add & 0xff) == 0);
+		emu->flags.s = ((add & 0x80) == 0 ? 0 : 1);
+		emu->flags.cy = ((add > 0xff) ? 1 : 0);
+		emu->flags.p = parity(add & 0xff);
+		emu->a = (uint8_t)(add & 0xff);
+		break;
+	}
 	case 0x8c:
+	{
+		uint16_t add = (uint16_t)emu->a + (uint16_t)emu->h + (uint16_t)emu->flags.cy;
+		emu->flags.z = ((add & 0xff) == 0);
+		emu->flags.s = ((add & 0x80) == 0 ? 0 : 1);
+		emu->flags.cy = ((add > 0xff) ? 1 : 0);
+		emu->flags.p = parity(add & 0xff);
+		emu->a = (uint8_t)(add & 0xff);
+		break;
+	}
 	case 0x8d:
+	{
+		uint16_t add = (uint16_t)emu->a + (uint16_t)emu->l + (uint16_t)emu->flags.cy;
+		emu->flags.z = ((add & 0xff) == 0);
+		emu->flags.s = ((add & 0x80) == 0 ? 0 : 1);
+		emu->flags.cy = ((add > 0xff) ? 1 : 0);
+		emu->flags.p = parity(add & 0xff);
+		emu->a = (uint8_t)(add & 0xff);
+		break;
+	}
 	case 0x8e:
+	{
+		uint8_t valM = emu->memory[(emu->h) << 8 | (emu->l)];
+		uint16_t add = (uint16_t)emu->a + (uint16_t)valM + (uint16_t)emu->flags.cy;
+		emu->flags.z = ((add & 0xff) == 0);
+		emu->flags.s = ((add & 0x80) == 0 ? 0 : 1);
+		emu->flags.cy = ((add > 0xff) ? 1 : 0);
+		emu->flags.p = parity(add & 0xff);
+		emu->a = (uint8_t)(add & 0xff);
+		break;
+	}
 	case 0x8f:
+	{
+		uint16_t add = (uint16_t)emu->a + (uint16_t)emu->a + (uint16_t)emu->flags.cy;
+		emu->flags.z = ((add & 0xff) == 0);
+		emu->flags.s = ((add & 0x80) == 0 ? 0 : 1);
+		emu->flags.cy = ((add > 0xff) ? 1 : 0);
+		emu->flags.p = parity(add & 0xff);
+		emu->a = (uint8_t)(add & 0xff);
+		break;
+	}
 	case 0x90:
+	{
+		uint16_t sub = (uint16_t)emu->a - (uint16_t)emu->b;
+		emu->flags.z = ((sub & 0xff) == 0);
+		emu->flags.s = ((sub & 0x80) == 0 ? 0 : 1);
+		emu->flags.cy = ((sub < 0) ? 1 : 0);
+		emu->flags.p = parity(sub & 0xff);
+		emu->a = (uint8_t)(sub & 0xff);
+		break;
+	}
 	case 0x91:
+	{
+		uint16_t sub = (uint16_t)emu->a - (uint16_t)emu->c;
+		emu->flags.z = ((sub & 0xff) == 0);
+		emu->flags.s = ((sub & 0x80) == 0 ? 0 : 1);
+		emu->flags.cy = ((sub < 0) ? 1 : 0);
+		emu->flags.p = parity(sub & 0xff);
+		emu->a = (uint8_t)(sub & 0xff);
+		break;
+	}
 	case 0x92:
+	{
+		uint16_t sub = (uint16_t)emu->a - (uint16_t)emu->d;
+		emu->flags.z = ((sub & 0xff) == 0);
+		emu->flags.s = ((sub & 0x80) == 0 ? 0 : 1);
+		emu->flags.cy = ((sub < 0) ? 1 : 0);
+		emu->flags.p = parity(sub & 0xff);
+		emu->a = (uint8_t)(sub & 0xff);
+		break;
+	}
 	case 0x93:
+	{
+		uint16_t sub = (uint16_t)emu->a - (uint16_t)emu->e;
+		emu->flags.z = ((sub & 0xff) == 0);
+		emu->flags.s = ((sub & 0x80) == 0 ? 0 : 1);
+		emu->flags.cy = ((sub < 0) ? 1 : 0);
+		emu->flags.p = parity(sub & 0xff);
+		emu->a = (uint8_t)(sub & 0xff);
+		break;
+	}
 	case 0x94:
+	{
+		uint16_t sub = (uint16_t)emu->a - (uint16_t)emu->h;
+		emu->flags.z = ((sub & 0xff) == 0);
+		emu->flags.s = ((sub & 0x80) == 0 ? 0 : 1);
+		emu->flags.cy = ((sub < 0) ? 1 : 0);
+		emu->flags.p = parity(sub & 0xff);
+		emu->a = (uint8_t)(sub & 0xff);
+		break;
+	}
 	case 0x95:
+	{
+		uint16_t sub = (uint16_t)emu->a - (uint16_t)emu->l;
+		emu->flags.z = ((sub & 0xff) == 0);
+		emu->flags.s = ((sub & 0x80) == 0 ? 0 : 1);
+		emu->flags.cy = ((sub < 0) ? 1 : 0);
+		emu->flags.p = parity(sub & 0xff);
+		emu->a = (uint8_t)(sub & 0xff);
+		break;
+	}
 	case 0x96:
+	{
+		uint8_t valM = emu->memory[(emu->h << 8) | (emu->l)];
+		uint16_t sub = (uint16_t)emu->a - (uint16_t)valM;
+		emu->flags.z = ((sub & 0xff) == 0);
+		emu->flags.s = ((sub & 0x80) == 0 ? 0 : 1);
+		emu->flags.cy = ((sub < 0) ? 1 : 0);
+		emu->flags.p = parity(sub & 0xff);
+		emu->a = (uint8_t)(sub & 0xff);
+		break;
+	}
 	case 0x97:
+	{
+		uint16_t sub = (uint16_t)emu->a - (uint16_t)emu->a;
+		emu->flags.z = ((sub & 0xff) == 0);
+		emu->flags.s = ((sub & 0x80) == 0 ? 0 : 1);
+		emu->flags.cy = ((sub < 0) ? 1 : 0);
+		emu->flags.p = parity(sub & 0xff);
+		emu->a = (uint8_t)(sub & 0xff);
+		break;
+	}
 	case 0x98:
+	{
+		uint16_t sub = (uint16_t)emu->a - (uint16_t)emu->b - (uint16_t)emu->flags.cy;
+		emu->flags.z = ((sub & 0xff) == 0);
+		emu->flags.s = ((sub & 0x80) == 0 ? 0 : 1);
+		emu->flags.cy = ((sub < 0) ? 1 : 0);
+		emu->flags.p = parity(sub & 0xff);
+		emu->a = (uint8_t)(sub & 0xff);
+		break;
+	}
 	case 0x99:
+	{
+		uint16_t sub = (uint16_t)emu->a - (uint16_t)emu->c - (uint16_t)emu->flags.cy;
+		emu->flags.z = ((sub & 0xff) == 0);
+		emu->flags.s = ((sub & 0x80) == 0 ? 0 : 1);
+		emu->flags.cy = ((sub < 0) ? 1 : 0);
+		emu->flags.p = parity(sub & 0xff);
+		emu->a = (uint8_t)(sub & 0xff);
+		break;
+	}
 	case 0x9a:
+	{
+		uint16_t sub = (uint16_t)emu->a - (uint16_t)emu->d - (uint16_t)emu->flags.cy;
+		emu->flags.z = ((sub & 0xff) == 0);
+		emu->flags.s = ((sub & 0x80) == 0 ? 0 : 1);
+		emu->flags.cy = ((sub < 0) ? 1 : 0);
+		emu->flags.p = parity(sub & 0xff);
+		emu->a = (uint8_t)(sub & 0xff);
+		break;
+	}
 	case 0x9b:
+	{
+		uint16_t sub = (uint16_t)emu->a - (uint16_t)emu->e - (uint16_t)emu->flags.cy;
+		emu->flags.z = ((sub & 0xff) == 0);
+		emu->flags.s = ((sub & 0x80) == 0 ? 0 : 1);
+		emu->flags.cy = ((sub < 0) ? 1 : 0);
+		emu->flags.p = parity(sub & 0xff);
+		emu->a = (uint8_t)(sub & 0xff);
+		break;
+	}
 	case 0x9c:
+	{
+		uint16_t sub = (uint16_t)emu->a - (uint16_t)emu->h - (uint16_t)emu->flags.cy;
+		emu->flags.z = ((sub & 0xff) == 0);
+		emu->flags.s = ((sub & 0x80) == 0 ? 0 : 1);
+		emu->flags.cy = ((sub < 0) ? 1 : 0);
+		emu->flags.p = parity(sub & 0xff);
+		emu->a = (uint8_t)(sub & 0xff);
+		break;
+	}
 	case 0x9d:
+	{
+		uint16_t sub = (uint16_t)emu->a - (uint16_t)emu->l - (uint16_t)emu->flags.cy;
+		emu->flags.z = ((sub & 0xff) == 0);
+		emu->flags.s = ((sub & 0x80) == 0 ? 0 : 1);
+		emu->flags.cy = ((sub < 0) ? 1 : 0);
+		emu->flags.p = parity(sub & 0xff);
+		emu->a = (uint8_t)(sub & 0xff);
+		break;
+	}
 	case 0x9e:
+	{
+		uint8_t valM = emu->memory[(emu->h << 8) | (emu->l)];
+		uint16_t sub = (uint16_t)emu->a - (uint16_t)valM - (uint16_t)emu->flags.cy;
+		emu->flags.z = ((sub & 0xff) == 0);
+		emu->flags.s = ((sub & 0x80) == 0 ? 0 : 1);
+		emu->flags.cy = ((sub < 0) ? 1 : 0);
+		emu->flags.p = parity(sub & 0xff);
+		emu->a = (uint8_t)(sub & 0xff);
+		break;
+	}
 	case 0x9f:
+	{
+		uint16_t sub = (uint16_t)emu->a - (uint16_t)emu->a - (uint16_t)emu->flags.cy;
+		emu->flags.z = ((sub & 0xff) == 0);
+		emu->flags.s = ((sub & 0x80) == 0 ? 0 : 1);
+		emu->flags.cy = ((sub < 0) ? 1 : 0);
+		emu->flags.p = parity(sub & 0xff);
+		emu->a = (uint8_t)(sub & 0xff);
+		break;
+	}
 	case 0xa0:
 	case 0xa1:
 	case 0xa2:
@@ -239,6 +713,15 @@ int emulate8080(emu8080 *emu)
 	case 0xc4:
 	case 0xc5:
 	case 0xc6:
+	{
+		uint16_t add = (uint16_t)emu->a + (uint16_t)opcode[1];
+		emu->flags.z = ((add & 0xff) == 0);
+		emu->flags.s = ((add & 0x80) == 0 ? 0 : 1);
+		emu->flags.cy = ((add > 0xff) ? 1 : 0);
+		emu->flags.p = parity(add & 0xff);
+		emu->a = (uint8_t)(add & 0xff);
+		break;
+	}
 	case 0xc7:
 	case 0xc8:
 	case 0xc9:
@@ -247,6 +730,15 @@ int emulate8080(emu8080 *emu)
 	case 0xcc:
 	case 0xcd:
 	case 0xce:
+	{
+		uint16_t add = (uint16_t)emu->a + (uint16_t)opcode[1] + (uint16_t)emu->flags.cy;
+		emu->flags.z = ((add & 0xff) == 0);
+		emu->flags.s = ((add & 0x80) == 0 ? 0 : 1);
+		emu->flags.cy = ((add > 0xff) ? 1 : 0);
+		emu->flags.p = parity(add & 0xff);
+		emu->a = (uint8_t)(add & 0xff);
+		break;
+	}
 	case 0xcf:
 	case 0xd0:
 	case 0xd1:
@@ -255,6 +747,15 @@ int emulate8080(emu8080 *emu)
 	case 0xd4:
 	case 0xd5:
 	case 0xd6:
+	{
+		uint16_t sub = (uint16_t)emu->a - (uint16_t)opcode[1];
+		emu->flags.z = ((sub & 0xff) == 0);
+		emu->flags.s = ((sub & 0x80) == 0 ? 0 : 1);
+		emu->flags.cy = ((sub < 0) ? 1 : 0);
+		emu->flags.p = parity(sub & 0xff);
+		emu->a = (uint8_t)(sub & 0xff);
+		break;
+	}
 	case 0xd7:
 	case 0xd8:
 	case 0xd9:
@@ -263,6 +764,15 @@ int emulate8080(emu8080 *emu)
 	case 0xdc:
 	case 0xdd:
 	case 0xde:
+	{
+		uint16_t sub = (uint16_t)emu->a - (uint16_t)opcode[1] - (uint16_t)emu->flags.cy;
+		emu->flags.z = ((sub & 0xff) == 0);
+		emu->flags.s = ((sub & 0x80) == 0 ? 0 : 1);
+		emu->flags.cy = ((sub < 0) ? 1 : 0);
+		emu->flags.p = parity(sub & 0xff);
+		emu->a = (uint8_t)(sub & 0xff);
+		break;
+	}
 	case 0xdf:
 	case 0xe0:
 	case 0xe1:
@@ -303,4 +813,6 @@ int emulate8080(emu8080 *emu)
 
 int main()
 {
+	uint8_t a = 0xff;
+	printf("%x", ++a);
 }
